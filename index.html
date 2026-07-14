@@ -175,6 +175,35 @@
   }
   .topbar .eyebrow{margin-bottom:4px;}
   .topbar h1{font-size:19px;margin:0;}
+
+  .reminder{
+    display:none;
+    background:rgba(242,166,90,0.12);border-bottom:1px solid rgba(242,166,90,0.35);
+    padding:10px 20px;font-size:12.5px;line-height:1.5;
+    align-items:center;justify-content:space-between;gap:10px;
+  }
+  .reminder.show{display:flex;}
+  .reminder .txt{color:var(--text);}
+  .reminder .txt b{color:var(--warn);}
+  .reminder .actions{display:flex;gap:8px;flex-shrink:0;}
+  .reminder button{
+    border:none;border-radius:7px;padding:6px 10px;font-size:11.5px;font-weight:700;
+    cursor:pointer;white-space:nowrap;font-family:inherit;
+  }
+  .reminder .btn-check{background:var(--warn);color:#1a1204;}
+  .reminder .btn-dismiss{background:transparent;color:var(--text-dim);border:1px solid var(--line);}
+
+  .price-check-box{
+    margin-top:16px;padding:14px 16px;border-radius:10px;
+    background:var(--panel-2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .price-check-box .txt{font-size:12.5px;color:var(--text-dim);line-height:1.5;flex:1;min-width:160px;}
+  .price-check-box .txt b{color:var(--text);}
+  a.btn-link{
+    display:inline-block;background:var(--accent);color:#0e1310;text-decoration:none;
+    border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;white-space:nowrap;
+  }
   .screens{flex:1;padding:18px 16px calc(96px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto;width:100%;}
   .screen{display:none;}
   .screen.active{display:block;animation:fadeIn .18s ease;}
@@ -207,6 +236,14 @@
     <div class="eyebrow">Lade-Tarif-Navigator</div>
     <h1 id="screen-title">Dein Ladebedarf</h1>
   </header>
+
+  <div class="reminder" id="reminder-banner">
+    <div class="txt" id="reminder-text"></div>
+    <div class="actions">
+      <button class="btn-check" id="reminder-check">Chargeprice öffnen ✓</button>
+      <button class="btn-dismiss" id="reminder-dismiss">Später</button>
+    </div>
+  </div>
 
   <main class="screens">
 
@@ -253,6 +290,11 @@
         <h2 style="margin-top:24px;">Tarife zum Vergleich</h2>
         <div class="tariffs" id="tariff-inputs"></div>
         <div class="hint">Voreingestellt: EnBW mobility+ S/M/L, Mobilize, Aldi, Lehener Straße. Frei editierbar.</div>
+
+        <div class="price-check-box">
+          <div class="txt">Preise checken & <b>hier oben eintragen</b>, falls sich was geändert hat.</div>
+          <a class="btn-link" href="https://de.chargeprice.app/" target="_blank" id="price-check-link">Chargeprice öffnen</a>
+        </div>
       </div>
     </section>
 
@@ -584,8 +626,8 @@ const TRACK_KEY = 'lade-monatswerte';
 
 async function loadTracking(){
   try{
-    const res = await window.storage.get(TRACK_KEY, false);
-    return res ? JSON.parse(res.value) : [];
+    const raw = localStorage.getItem(TRACK_KEY);
+    return raw ? JSON.parse(raw) : [];
   }catch(e){
     return [];
   }
@@ -593,7 +635,7 @@ async function loadTracking(){
 
 async function saveTracking(entries){
   try{
-    await window.storage.set(TRACK_KEY, JSON.stringify(entries), false);
+    localStorage.setItem(TRACK_KEY, JSON.stringify(entries));
   }catch(e){
     console.error('Speichern fehlgeschlagen', e);
   }
@@ -692,6 +734,62 @@ tabs.forEach(tab=>{
     window.scrollTo(0,0);
   });
 });
+
+// ---------- Preis-Check-Erinnerung ----------
+const CHECK_KEY = 'lade-preis-check';
+const REMINDER_DAYS = 30;
+
+function loadCheckDate(){
+  try{ return localStorage.getItem(CHECK_KEY); }catch(e){ return null; }
+}
+function saveCheckDate(dateStr){
+  try{ localStorage.setItem(CHECK_KEY, dateStr); }catch(e){}
+}
+function daysSince(dateStr){
+  const d1 = new Date(dateStr), d2 = new Date();
+  return Math.floor((d2 - d1) / (1000*60*60*24));
+}
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function renderReminder(){
+  const banner = document.getElementById('reminder-banner');
+  const txt = document.getElementById('reminder-text');
+  const last = loadCheckDate();
+  const dismissedToday = sessionStorage.getItem('lade-reminder-dismissed') === todayStr();
+
+  if(dismissedToday){ banner.classList.remove('show'); return; }
+
+  if(!last){
+    txt.innerHTML = `Preise <b>noch nie geprüft</b> — kurz bei Chargeprice nachsehen und oben eintragen?`;
+    banner.classList.add('show');
+  } else {
+    const days = daysSince(last);
+    if(days >= REMINDER_DAYS){
+      txt.innerHTML = `Preise zuletzt vor <b>${days} Tagen</b> geprüft — Zeit für einen Check?`;
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  }
+}
+
+document.getElementById('reminder-check').addEventListener('click', ()=>{
+  saveCheckDate(todayStr());
+  window.open('https://de.chargeprice.app/', '_blank');
+  renderReminder();
+});
+document.getElementById('reminder-dismiss').addEventListener('click', ()=>{
+  sessionStorage.setItem('lade-reminder-dismissed', todayStr());
+  document.getElementById('reminder-banner').classList.remove('show');
+});
+document.getElementById('price-check-link').addEventListener('click', ()=>{
+  saveCheckDate(todayStr());
+  renderReminder();
+});
+
+renderReminder();
 </script>
 </body>
 </html>
