@@ -2,6 +2,10 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lade-Rechner">
 <title>Lade-Tarif-Navigator</title>
 <style>
   :root{
@@ -159,179 +163,234 @@
   .track-avg{font-size:12.5px;color:var(--text-dim);margin-top:10px;}
   .track-avg b{color:var(--accent);}
   .track-empty{font-size:13px;color:var(--text-dim);padding:14px 0;}
+
+  /* ---- App shell ---- */
+  html,body{height:100%;}
+  body{padding:0;}
+  .app{display:flex;flex-direction:column;min-height:100vh;}
+  .topbar{
+    padding:calc(14px + env(safe-area-inset-top)) 20px 14px;
+    border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--bg);z-index:5;
+  }
+  .topbar .eyebrow{margin-bottom:4px;}
+  .topbar h1{font-size:19px;margin:0;}
+  .screens{flex:1;padding:18px 16px calc(96px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto;width:100%;}
+  .screen{display:none;}
+  .screen.active{display:block;animation:fadeIn .18s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .screen-intro{color:var(--text-dim);font-size:14px;line-height:1.55;margin-bottom:18px;}
+
+  .tabbar{
+    position:fixed;bottom:0;left:0;right:0;display:flex;
+    background:rgba(26,31,38,0.94);backdrop-filter:blur(10px);
+    border-top:1px solid var(--line);
+    padding:8px 2px calc(8px + env(safe-area-inset-bottom));z-index:10;
+  }
+  .tab{
+    flex:1;background:none;border:none;color:var(--text-dim);
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:10.5px;font-family:inherit;padding:5px 0;cursor:pointer;
+  }
+  .tab .tab-icon{font-size:19px;line-height:1;}
+  .tab.active{color:var(--accent);}
+
+  @media(min-width:760px){
+    .grid{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
 
-  <header>
-    <div class="eyebrow">Lade-Tarif-Navigator · ohne eigene Wallbox</div>
-    <h1>Wann lohnt sich ein Tarif mit Grundgebühr?</h1>
-    <div class="sub">Trage deinen typischen Fahrbedarf ein — der Rechner ermittelt automatisch die Break-even-Menge und sagt dir, ob sich ein Abo-Tarif für den Monat lohnt oder ob du besser ohne Grundgebühr fährst.</div>
+  <header class="topbar">
+    <div class="eyebrow">Lade-Tarif-Navigator</div>
+    <h1 id="screen-title">Dein Ladebedarf</h1>
   </header>
 
-  <div class="grid">
+  <main class="screens">
 
-    <!-- INPUTS -->
-    <div class="panel">
-      <h2>Dein Ladebedarf</h2>
+    <!-- SCREEN 1: BEDARF -->
+    <section class="screen active" data-screen="bedarf">
+      <div class="screen-intro">Trag deinen typischen Fahrbedarf ein — der Rechner ermittelt automatisch die Break-even-Menge und sagt dir, ob sich ein Abo-Tarif lohnt.</div>
 
-      <div class="field">
-        <label>Reguläre Fahrten pro Woche (Alltag, Aldi etc.) <span class="val" id="v-week">75</span> km</label>
-        <input type="range" id="week-km" min="30" max="150" value="75" step="5">
-      </div>
+      <div class="panel">
+        <h2>Dein Ladebedarf</h2>
 
-      <div class="row2">
         <div class="field">
-          <label>Karlsruhe-Fahrten <span class="val" id="v-ka">1</span> ×/Monat</label>
-          <input type="range" id="ka-count" min="0" max="4" value="1" step="1">
+          <label>Reguläre Fahrten pro Woche (Alltag, Aldi etc.) <span class="val" id="v-week">75</span> km</label>
+          <input type="range" id="week-km" min="30" max="150" value="75" step="5">
         </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Karlsruhe-Fahrten <span class="val" id="v-ka">1</span> ×/Monat</label>
+            <input type="range" id="ka-count" min="0" max="4" value="1" step="1">
+          </div>
+          <div class="field">
+            <label>Strecke einfach <span class="val" id="v-ka-km">140</span> km</label>
+            <input type="range" id="ka-km" min="80" max="200" value="140" step="10">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Saarbrücken-Fahrten <span class="val" id="v-sb">1</span> ×/Quartal</label>
+            <input type="range" id="sb-count" min="0" max="4" value="1" step="1">
+          </div>
+          <div class="field">
+            <label>Strecke einfach <span class="val" id="v-sb-km">190</span> km</label>
+            <input type="range" id="sb-km" min="120" max="280" value="190" step="10">
+          </div>
+        </div>
+
         <div class="field">
-          <label>Strecke einfach <span class="val" id="v-ka-km">140</span> km</label>
-          <input type="range" id="ka-km" min="80" max="200" value="140" step="10">
+          <label>Verbrauch <span class="val" id="v-cons">16.0</span> kWh/100km</label>
+          <input type="range" id="cons" min="12" max="22" value="16" step="0.5">
+          <div class="hint">Renault R4 E-Tech: Richtwert Mix ~15–17, mit viel Autobahn/Frankreich eher am oberen Rand.</div>
+        </div>
+
+        <h2 style="margin-top:24px;">Tarife zum Vergleich</h2>
+        <div class="tariffs" id="tariff-inputs"></div>
+        <div class="hint">Voreingestellt: EnBW mobility+ S/M/L, Mobilize, Aldi, Lehener Straße. Frei editierbar.</div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: VERGLEICH -->
+    <section class="screen" data-screen="vergleich">
+      <div class="panel">
+        <div class="result-hero">
+          <div class="num" id="kwh-out">–</div>
+          <div class="label">geschätzter Ladebedarf in diesem Monat (kWh)</div>
+        </div>
+
+        <h2>Kostenvergleich pro Monat</h2>
+        <div class="bars" id="bars"></div>
+
+        <div class="verdict" id="verdict"></div>
+
+        <h2 style="margin-top:24px;">Break-even-Grafik</h2>
+        <div class="chart-wrap" id="breakeven-chart"></div>
+        <div class="chart-legend" id="breakeven-legend"></div>
+
+        <h2 style="margin-top:24px;">Hybrid-Empfehlung</h2>
+        <div class="hybrid-box" id="hybrid-box"></div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: TRACKING -->
+    <section class="screen" data-screen="tracking">
+      <div class="panel">
+        <h2>Monats-Tracking</h2>
+        <div class="hint" style="margin-bottom:14px;">Trag am Monatsende deine echten kWh ein — der Rechner merkt sich das dauerhaft und zeigt dir den Verlauf über die Zeit.</div>
+        <div class="track-row">
+          <div class="field"><label>Monat</label><input type="month" id="track-month"></div>
+          <div class="field"><label>Geladene kWh</label><input type="number" id="track-kwh" placeholder="z. B. 120"></div>
+          <button class="btn" id="track-save">Speichern</button>
+        </div>
+        <div class="chart-wrap" id="track-chart"></div>
+        <div class="track-avg" id="track-avg"></div>
+        <div class="track-list" id="track-list"></div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: ANLEITUNG -->
+    <section class="screen" data-screen="anleitung">
+      <div class="tree">
+        <h2>Der Algorithmus dahinter — dein monatlicher Entscheidungsbaum</h2>
+        <div class="step">
+          <div class="n">1</div>
+          <div class="txt"><b>Bedarf schätzen:</b> Wie viele km fährst du diesen Monat? (Regeltermine + geplante Fernfahrten wie Karlsruhe/Saarbrücken). Grober Richtwert reicht.</div>
+        </div>
+        <div class="step">
+          <div class="n">2</div>
+          <div class="txt"><b>Break-even berechnen:</b> Grundgebühr ÷ (Preis ohne Abo − Preis mit Abo) = kWh, ab der sich das Abo lohnt. Der Rechner macht das automatisch für jeden Tarif.</div>
+        </div>
+        <div class="step">
+          <div class="n">3</div>
+          <div class="txt">Liegt dein geschätzter Bedarf <b>über</b> der Break-even-Menge eines Tarifs? → Diesen Monat buchen (die meisten Anbieter sind monatlich kündbar/wechselbar).</div>
+        </div>
+        <div class="step">
+          <div class="n">4</div>
+          <div class="txt">Liegt er <b>darunter</b>? → Im günstigsten Tarif ohne Grundgebühr bleiben (z. B. EnBW S) und ad-hoc laden.</div>
+        </div>
+        <div class="step">
+          <div class="n">5</div>
+          <div class="txt"><b>Sonderfall Frankreich-Fahrten:</b> Für Saarbrücken-Trips über französische Autobahnen lohnt sich oft ein zusätzlicher, separat kündbarer HPC-Tarif (z. B. Ionity Passport, 11,99 €/Monat, 39 ct/kWh statt 65 ct ad-hoc) — nur für den jeweiligen Reisemonat buchen, danach wieder kündigen.</div>
+        </div>
+        <div class="step">
+          <div class="n">6</div>
+          <div class="txt"><b>Monatlich neu prüfen:</b> Am Monatsanfang (oder -ende für den Folgemonat) Bedarf neu schätzen und ggf. Tarif wechseln/kündigen. Das lohnt sich besonders, weil dein Verbrauch stark schwankt (ruhiger Monat vs. Monat mit Fernfahrt).</div>
         </div>
       </div>
 
-      <div class="row2">
-        <div class="field">
-          <label>Saarbrücken-Fahrten <span class="val" id="v-sb">1</span> ×/Quartal</label>
-          <input type="range" id="sb-count" min="0" max="4" value="1" step="1">
+      <footer>
+        Preise Stand Juli 2026. EnBW mobility+ (S: 0 €/0,56 €/kWh · M: 5,99 €/0,46 €/kWh · L: 11,99 €/0,39 €/kWh, eigene Ladepunkte). Mobilize Charge Pass Basic: 0 €/0,72 €/kWh, Intense: 4,99 €/0,44 €/kWh (Deutschland, einheitlich AC/DC/Ionity, Stand 15.04.2026 — ggf. 6 Monate Grundgebühr geschenkt bei Neuwagenkauf, in MyRenault prüfen). Aldi Süd Freiburg: ad-hoc 0,47 €/kWh, kein Abo nötig. Lehener Straße Freiburg (Stark Energy / badenova): ad-hoc ca. 0,49–0,54 €/kWh laut Nutzerbewertungen, kein Abo nötig — vor Ort/in der App prüfen, da nutzerbasierte Angabe. Roaming-Preise bei Fremdanbietern können höher liegen (bis 0,89 €/kWh) — vor jedem Ladevorgang in der App prüfen. Alle Werte ohne Gewähr, zur groben Orientierung.
+      </footer>
+    </section>
+
+    <!-- SCREEN 5: IN DER NÄHE -->
+    <section class="screen" data-screen="naehe">
+      <div class="tree">
+        <h2>Ladepunkte in eurer Nähe (Betzenhausen)</h2>
+        <div class="step">
+          <div class="n">1</div>
+          <div class="txt"><b>Stark Energy – Lehener Str. 101</b> · ad-hoc ca. 0,49–0,54 €/kWh, bei den Westarkaden.
+            <div style="margin-top:6px;">
+              <a href="https://maps.google.com/?cid=16280608484351490105" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
+              <a href="https://de.chargemap.com/search?q=Lehener%20Stra%C3%9Fe%20101%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap</a>
+            </div>
+          </div>
         </div>
-        <div class="field">
-          <label>Strecke einfach <span class="val" id="v-sb-km">190</span> km</label>
-          <input type="range" id="sb-km" min="120" max="280" value="190" step="10">
+        <div class="step">
+          <div class="n">2</div>
+          <div class="txt"><b>badenova – Lehener Str. 125</b> · direkt daneben, zweiter Betreiber.
+            <div style="margin-top:6px;">
+              <a href="https://maps.google.com/?cid=18106113515408276865" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
+              <a href="https://de.chargemap.com/search?q=Lehener%20Stra%C3%9Fe%20125%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap</a>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div class="field">
-        <label>Verbrauch <span class="val" id="v-cons">16.0</span> kWh/100km</label>
-        <input type="range" id="cons" min="12" max="22" value="16" step="0.5">
-        <div class="hint">Renault R4 E-Tech: Richtwert Mix ~15–17, mit viel Autobahn/Frankreich eher am oberen Rand.</div>
-      </div>
-
-      <h2 style="margin-top:24px;">Tarife zum Vergleich</h2>
-      <div class="tariffs" id="tariff-inputs"></div>
-      <div class="hint">Voreingestellt: EnBW mobility+ S/M/L (Stand 2026, reguläre Preise ohne Sommeraktion). Frei editierbar — trag hier auch Ionity, Shell Recharge o.ä. ein.</div>
-    </div>
-
-    <!-- RESULTS -->
-    <div class="panel">
-      <div class="result-hero">
-        <div class="num" id="kwh-out">–</div>
-        <div class="label">geschätzter Ladebedarf in diesem Monat (kWh)</div>
-      </div>
-
-      <h2>Kostenvergleich pro Monat</h2>
-      <div class="bars" id="bars"></div>
-
-      <div class="verdict" id="verdict"></div>
-
-      <h2 style="margin-top:24px;">Break-even-Grafik</h2>
-      <div class="chart-wrap" id="breakeven-chart"></div>
-      <div class="chart-legend" id="breakeven-legend"></div>
-
-      <h2 style="margin-top:24px;">Hybrid-Empfehlung</h2>
-      <div class="hybrid-box" id="hybrid-box"></div>
-    </div>
-  </div>
-
-  <!-- MONTHLY TRACKING -->
-  <div class="panel" style="margin-top:20px;">
-    <h2>Monats-Tracking</h2>
-    <div class="hint" style="margin-bottom:14px;">Trag am Monatsende deine echten kWh ein — der Rechner merkt sich das dauerhaft und zeigt dir den Verlauf über die Zeit.</div>
-    <div class="track-row">
-      <div class="field"><label>Monat</label><input type="month" id="track-month"></div>
-      <div class="field"><label>Geladene kWh</label><input type="number" id="track-kwh" placeholder="z. B. 120"></div>
-      <button class="btn" id="track-save">Eintrag speichern</button>
-    </div>
-    <div class="chart-wrap" id="track-chart"></div>
-    <div class="track-avg" id="track-avg"></div>
-    <div class="track-list" id="track-list"></div>
-  </div>
-
-  <!-- DECISION TREE -->
-  <div class="tree">
-    <h2>Der Algorithmus dahinter — dein monatlicher Entscheidungsbaum</h2>
-    <div class="step">
-      <div class="n">1</div>
-      <div class="txt"><b>Bedarf schätzen:</b> Wie viele km fährst du diesen Monat? (Regeltermine + geplante Fernfahrten wie Karlsruhe/Saarbrücken). Grober Richtwert reicht.</div>
-    </div>
-    <div class="step">
-      <div class="n">2</div>
-      <div class="txt"><b>Break-even berechnen:</b> Grundgebühr ÷ (Preis ohne Abo − Preis mit Abo) = kWh, ab der sich das Abo lohnt. Der Rechner oben macht das automatisch für jeden Tarif.</div>
-    </div>
-    <div class="step">
-      <div class="n">3</div>
-      <div class="txt">Liegt dein geschätzter Bedarf <b>über</b> der Break-even-Menge eines Tarifs? → Diesen Monat buchen (die meisten Anbieter sind monatlich kündbar/wechselbar).</div>
-    </div>
-    <div class="step">
-      <div class="n">4</div>
-      <div class="txt">Liegt er <b>darunter</b>? → Im günstigsten Tarif ohne Grundgebühr bleiben (z. B. EnBW S) und ad-hoc laden.</div>
-    </div>
-    <div class="step">
-      <div class="n">5</div>
-      <div class="txt"><b>Sonderfall Frankreich-Fahrten:</b> Für Saarbrücken-Trips über französische Autobahnen lohnt sich oft ein zusätzlicher, separat kündbarer HPC-Tarif (z. B. Ionity Passport, 11,99 €/Monat, 39 ct/kWh statt 65 ct ad-hoc) — nur für den jeweiligen Reisemonat buchen, danach wieder kündigen.</div>
-    </div>
-    <div class="step">
-      <div class="n">6</div>
-      <div class="txt"><b>Monatlich neu prüfen:</b> Am Monatsanfang (oder -ende für den Folgemonat) Bedarf neu schätzen und ggf. Tarif wechseln/kündigen. Das lohnt sich besonders, weil dein Verbrauch stark schwankt (ruhiger Monat vs. Monat mit Fernfahrt).</div>
-    </div>
-  </div>
-
-  <!-- NEARBY STATIONS -->
-  <div class="tree">
-    <h2>Ladepunkte in eurer Nähe (Betzenhausen)</h2>
-    <div class="step">
-      <div class="n">1</div>
-      <div class="txt"><b>Stark Energy – Lehener Str. 101</b> · ad-hoc ca. 0,49–0,54 €/kWh, bei den Westarkaden.
-        <div style="margin-top:6px;">
-          <a href="https://maps.google.com/?cid=16280608484351490105" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
-          <a href="https://de.chargemap.com/search?q=Lehener%20Stra%C3%9Fe%20101%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap (Live-Belegung)</a>
+        <div class="step">
+          <div class="n">3</div>
+          <div class="txt"><b>badenova / be.ENERGISED – Sundgauallee 20</b> · ca. 600 m entfernt, zwei Anbieter an einem Standort.
+            <div style="margin-top:6px;">
+              <a href="https://maps.google.com/?cid=21805918136841723" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
+              <a href="https://de.chargemap.com/search?q=Sundgauallee%2020%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap</a>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="n">2</div>
-      <div class="txt"><b>badenova – Lehener Str. 125</b> · direkt daneben, zweiter Betreiber.
-        <div style="margin-top:6px;">
-          <a href="https://maps.google.com/?cid=18106113515408276865" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
-          <a href="https://de.chargemap.com/search?q=Lehener%20Stra%C3%9Fe%20125%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap (Live-Belegung)</a>
+        <div class="step">
+          <div class="n">4</div>
+          <div class="txt"><b>Strom Speicher Markt – Charlottenburger Str. 1</b> · 24/7 geöffnet, ebenfalls nah.
+            <div style="margin-top:6px;">
+              <a href="https://maps.google.com/?cid=14038463085772889989" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
+              <a href="https://de.chargemap.com/search?q=Charlottenburger%20Stra%C3%9Fe%201%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap</a>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="n">3</div>
-      <div class="txt"><b>badenova / be.ENERGISED – Sundgauallee 20</b> · ca. 600 m entfernt, zwei Anbieter an einem Standort.
-        <div style="margin-top:6px;">
-          <a href="https://maps.google.com/?cid=21805918136841723" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
-          <a href="https://de.chargemap.com/search?q=Sundgauallee%2020%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap (Live-Belegung)</a>
+        <div class="step">
+          <div class="n">5</div>
+          <div class="txt"><b>ALDI Süd Basler Straße</b> · Schnelllader bis 125 kW, ad-hoc 0,47 €/kWh.
+            <div style="margin-top:6px;">
+              <a href="https://www.google.com/maps/search/?api=1&query=ALDI+Süd+Basler+Straße+113+Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
+              <a href="https://de.chargemap.com/search?q=ALDI%20Basler%20Stra%C3%9Fe%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap</a>
+            </div>
+          </div>
         </div>
+        <div class="hint" style="margin-top:6px;">Tipp: Diese fünf Standorte einmal in der Chargemap- oder PlugShare-App als Favoriten speichern — dann seht ihr die Live-Belegung auf einen Blick.</div>
       </div>
-    </div>
-    <div class="step">
-      <div class="n">4</div>
-      <div class="txt"><b>Strom Speicher Markt – Charlottenburger Str. 1</b> · 24/7 geöffnet, ebenfalls nah.
-        <div style="margin-top:6px;">
-          <a href="https://maps.google.com/?cid=14038463085772889989" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
-          <a href="https://de.chargemap.com/search?q=Charlottenburger%20Stra%C3%9Fe%201%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap (Live-Belegung)</a>
-        </div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="n">5</div>
-      <div class="txt"><b>ALDI Süd Basler Straße</b> · Schnelllader bis 125 kW, ad-hoc 0,47 €/kWh.
-        <div style="margin-top:6px;">
-          <a href="https://www.google.com/maps/search/?api=1&query=ALDI+Süd+Basler+Straße+113+Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;margin-right:14px;">→ Google Maps</a>
-          <a href="https://de.chargemap.com/search?q=ALDI%20Basler%20Stra%C3%9Fe%20Freiburg" target="_blank" style="color:var(--accent);text-decoration:none;">→ Chargemap (Live-Belegung)</a>
-        </div>
-      </div>
-    </div>
-    <div class="hint" style="margin-top:6px;">Tipp: Diese fünf Standorte einmal in der Chargemap- oder PlugShare-App als Favoriten speichern — dann seht ihr die Live-Belegung auf einen Blick, bevor ihr losfahrt. Ein direktes Live-Belegungs-Widget kann dieser Rechner nicht anzeigen, da er keinen dauerhaften Zugriff auf die Betreiber-Daten hat.</div>
-  </div>
+    </section>
 
-  <footer>
-    Preise Stand Juli 2026. EnBW mobility+ (S: 0 €/0,56 €/kWh · M: 5,99 €/0,46 €/kWh · L: 11,99 €/0,39 €/kWh, eigene Ladepunkte). Mobilize Charge Pass Basic: 0 €/0,72 €/kWh, Intense: 4,99 €/0,44 €/kWh (Deutschland, einheitlich AC/DC/Ionity, Stand 15.04.2026 — ggf. 6 Monate Grundgebühr geschenkt bei Neuwagenkauf, in MyRenault prüfen). Aldi Süd Freiburg: ad-hoc 0,47 €/kWh, kein Abo nötig. Lehener Straße Freiburg (Stark Energy / badenova): ad-hoc ca. 0,49–0,54 €/kWh laut Nutzerbewertungen, kein Abo nötig — vor Ort/in der App prüfen, da nutzerbasierte Angabe. Roaming-Preise bei Fremdanbietern können höher liegen (bis 0,89 €/kWh) — vor jedem Ladevorgang in der App prüfen. Alle Werte ohne Gewähr, zur groben Orientierung.
-  </footer>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-target="bedarf" data-title="Dein Ladebedarf"><span class="tab-icon">🔧</span><span>Bedarf</span></button>
+    <button class="tab" data-target="vergleich" data-title="Kostenvergleich"><span class="tab-icon">📊</span><span>Vergleich</span></button>
+    <button class="tab" data-target="tracking" data-title="Monats-Tracking"><span class="tab-icon">📈</span><span>Tracking</span></button>
+    <button class="tab" data-target="anleitung" data-title="Entscheidungsbaum"><span class="tab-icon">🧭</span><span>Anleitung</span></button>
+    <button class="tab" data-target="naehe" data-title="In der Nähe"><span class="tab-icon">📍</span><span>In der Nähe</span></button>
+  </nav>
 
 </div>
 
@@ -617,6 +676,22 @@ document.getElementById('track-save').addEventListener('click', async ()=>{
   buildTrackChart(entries);
   renderTrackList(entries);
 })();
+
+// ---------- Tab navigation ----------
+const tabs = document.querySelectorAll('.tab');
+const screens = document.querySelectorAll('.screen');
+const screenTitle = document.getElementById('screen-title');
+
+tabs.forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    const target = tab.dataset.target;
+    tabs.forEach(t=>t.classList.toggle('active', t===tab));
+    screens.forEach(s=>s.classList.toggle('active', s.dataset.screen===target));
+    screenTitle.textContent = tab.dataset.title;
+    document.querySelector('.screens').scrollTo(0,0);
+    window.scrollTo(0,0);
+  });
+});
 </script>
 </body>
 </html>
